@@ -1,0 +1,87 @@
+version: '3.4'
+
+## These items are either good reasonable defaults, or common enough that we don't want to repeat them.
+## They can be overridden in the services after the 'import'.
+x-app: &default-app
+  # Need host user so don't run into permissions issues.
+  user: "${JD_UID}:${JD_GID}"
+  restart: always
+  stop_grace_period: "3s"
+  extra_hosts:
+    - "${SITE_NAME}:host-gateway"
+  healthcheck:
+    interval: 1m
+    timeout: 10s
+    retries: 3
+    start_period: 10s
+
+x-cloud-app: &cloud-app
+  networks:
+    - cloud
+x-client-app: &client-app
+  networks:
+    - client
+
+services:
+  postgis:
+    image: postgis/postgis:latest
+    environment:
+      POSTGRES_DB: jd
+      POSTGRES_USER: jd_user
+      POSTGRES_PASSWORD: jd_password
+    volumes:
+      - "postgis:/var/lib/postgresql/data"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready", "-d", "jd" ]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+
+  api:
+    <<: [*default-app, *cloud-app]
+    image: joedo-api:latest
+    build:
+      dockerfile: api.Dockerfile
+      context: .
+    command: "gunicorn joedo.wsgi:application -w 4 -b 0.0.0.0:8000 --no-sendfile --reload"
+    ports:
+      - "8000:8000"
+    volumes:
+      - './:/app/.'
+    working_dir: '/app'
+    depends_on:
+      - postgis
+    environment:
+      DATABASE_URL: postgis://jd_user:jd_password@postgis:5432/jd
+      DJANGO_SECRET_KEY: your_secret_key
+      DJANGO_DEBUG: "True"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl", "http://localhost:8000" ]
+      interval: 10s
+      timeout: 20s
+      retries: 5
+
+  ui:
+    <<: [*default-app, *client-app]
+    image: joedo-ui:latest
+    build:
+      dockerfile: ui.Dockerfile
+      context: .
+    ports:
+      - "5173:5173"
+    command:
+      - /home/node/app/node_modules/vite/bin/vite.js
+    volumes:
+      - './ui:/home/node/app/ui' # Don't copy whole directory, so we don't overwrite node_modules.
+      # - './:/app/.' # Use this one instead if you want to use local node modules without rebuilding over and over.
+    working_dir: '/home/node/app'
+    depends_on:
+      - api
+    healthcheck:
+      test: [ "CMD-SHELL", "curl", "http://localhost:5173" ]
+      interval: 10s
+      timeout: 20s
+      retries: 5
+
+volumes:
+  postgis:
