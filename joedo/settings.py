@@ -85,8 +85,15 @@ WSGI_APPLICATION = 'joedo.wsgi.application'
 DATABASES = {'default': dj_database_url.config(
     conn_max_age=600,
     conn_health_checks=True,
-)
+) if os.getenv('DATABASE_URL') else {
+    'ENGINE': 'django.contrib.gis.db.backends.postgis',
+    'HOST': os.environ.get('POSTGRES_HOST'),
+    'PORT': os.environ.get('POSTGRES_PORT'),
+    'NAME': os.environ.get('POSTGRES_DB'),
+    'USER': os.environ.get('POSTGRES_USER'),
+    'PASSWORD': os.environ.get('POSTGRES_PASSWORD')
 }
+             }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -117,15 +124,26 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
-STATIC_URL = 'static/'
-STATIC_ROOT = os.getenv("STATIC_ROOT", "static")
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 APPEND_SLASH = False
+
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
+AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL')
+
+MEDIA_URL = AWS_S3_ENDPOINT_URL or f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/'
+STATIC_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/static/'
+
+STATIC_ROOT = os.getenv("STATIC_ROOT", "static")
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage"
+    },
+    "staticfiles": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage"
+    }
+}
