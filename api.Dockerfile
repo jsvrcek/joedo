@@ -23,6 +23,6 @@ RUN curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.s
 
 COPY . .
 
-RUN pip install -e . && python manage.py collectstatic --no-input
+RUN pip install -e .
 
 CMD ["echo", "This image has no default run command."]

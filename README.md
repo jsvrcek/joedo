@@ -17,4 +17,14 @@ Geoserver
 
 # Dev 
 
-Run 
+Add this to your bash profile to keep a similar dev experience. 
+```bash
+alias joedo="cd ~/joedo && conda activate joedo && export SITE_NAME=joedo.local.test"
+jd() {
+    export JD_UID="$(id -u)"
+    export JD_GID="$(id -g)"
+    cd ~/joedo
+    docker compose $@
+    cd -
+}
+```

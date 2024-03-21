@@ -15,6 +15,21 @@ x-app: &default-app
     retries: 3
     start_period: 10s
 
+x-default-env: &default-env
+  AWS_ACCESS_KEY_ID: AWS_ID
+  AWS_SECRET_ACCESS_KEY: AWS_SECRET
+  AWS_STORAGE_BUCKET_NAME: 'joedo'
+  AWS_S3_REGION_NAME: 'us-east-1'
+  AWS_S3_ENDPOINT_URL: 'http://${SITE_NAME}:9000/'
+  DJANGO_SECRET_KEY: your_secret_key
+  DJANGO_DEBUG: "True"
+  MINIO_ROOT_USER: AWS_ID
+  MINIO_ROOT_PASSWORD: AWS_SECRET
+  POSTGRES_DB: joedo
+  POSTGRES_HOST: postgis
+  POSTGRES_PASSWORD: jd_password
+  POSTGRES_USER: jd_user
+
 x-cloud-app: &cloud-app
   networks:
     - cloud
@@ -26,19 +41,17 @@ services:
   postgis:
     image: postgis/postgis:latest
     environment:
-      POSTGRES_DB: jd
-      POSTGRES_USER: jd_user
-      POSTGRES_PASSWORD: jd_password
+      <<: *default-env
     volumes:
       - "postgis:/var/lib/postgresql/data"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready", "-d", "jd" ]
+      test: [ "CMD-SHELL", "pg_isready", "-d", "joedo" ]
       interval: 30s
       timeout: 60s
       retries: 5
 
   api:
-    <<: [*default-app, *cloud-app]
+    <<: [ *default-app, *cloud-app ]
     image: joedo-api:latest
     build:
       dockerfile: api.Dockerfile
@@ -49,12 +62,12 @@ services:
     volumes:
       - './:/app/.'
     working_dir: '/app'
+    links:
+      - minio
     depends_on:
       - postgis
     environment:
-      DATABASE_URL: postgis://jd_user:jd_password@postgis:5432/jd
-      DJANGO_SECRET_KEY: your_secret_key
-      DJANGO_DEBUG: "True"
+      <<: *default-env
     healthcheck:
       test: [ "CMD-SHELL", "curl", "http://localhost:8000" ]
       interval: 10s
@@ -62,7 +75,7 @@ services:
       retries: 5
 
   ui:
-    <<: [*default-app, *client-app]
+    <<: [ *default-app, *client-app ]
     image: joedo-ui:latest
     build:
       dockerfile: ui.Dockerfile
@@ -73,7 +86,7 @@ services:
       - /home/node/app/node_modules/vite/bin/vite.js
     volumes:
       - './ui:/home/node/app/ui' # Don't copy whole directory, so we don't overwrite node_modules.
-      # - './:/app/.' # Use this one instead if you want to use local node modules without rebuilding over and over.
+      - './:/home/node/app/' # Use this one instead if you want to use local node modules without rebuilding over and over.
     working_dir: '/home/node/app'
     depends_on:
       - api
@@ -83,5 +96,22 @@ services:
       timeout: 20s
       retries: 5
 
+  minio:
+    <<: *cloud-app
+    image: quay.io/minio/minio
+    command: server /data --console-address ":9001"
+    volumes:
+      - "minio_data:/data"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      <<: *default-env
+
 volumes:
+  minio_data:
   postgis:
+
+networks:
+  client:
+  cloud:

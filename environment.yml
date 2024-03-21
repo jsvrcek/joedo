@@ -1,4 +1,4 @@
-name: conda_env
+name: joedo
 channels:
   - conda-forge
 dependencies:
@@ -106,8 +106,9 @@ dependencies:
   - nss=3.98=h1d7d5a4_0
   - numpy=1.26.4=py310hb13e2d6_0
   - openjpeg=2.5.2=h488ebb8_0
-  - openssl=3.2.1=hd590300_0
+  - openssl=3.2.1=hd590300_1
   - pcre2=10.42=hcad00b1_0
+  - pillow=10.2.0=py310h01dd4db_0
   - pip=24.0=pyhd8ed1ab_0
   - pixman=0.43.2=h59595ed_0
   - poppler=24.02.0=h590f24d_0
@@ -150,12 +151,21 @@ dependencies:
   - zstd=1.5.5=hfc55251_0
   - pip:
       - asgiref==3.7.2
+      - boto3==1.34.64
+      - botocore==1.34.64
       - dj-database-url==2.1.0
       - django==5.0.3
+      - django-storages==1.14.2
       - djangorestframework==3.14.0
       - djangorestframework-gis==1.0
       - gunicorn==21.2.0
+      - jmespath==1.0.1
       - packaging==23.2
+      - python-dateutil==2.9.0.post0
       - pytz==2024.1
+      - s3transfer==0.10.1
+      - six==1.16.0
       - sqlparse==0.4.4
+      - urllib3==2.2.1
       - whitenoise==6.6.0
+prefix: /home/user/miniconda3/envs/joedo

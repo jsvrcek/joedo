@@ -1,9 +1,7 @@
-from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from api.models import Feature
+from api.models import JDUser
 
 
-class FeatureSerializer(GeoFeatureModelSerializer):
+class UserSerializer(ModelSerializer):
     class Meta:
-        model = Feature
+        model = JDUser
         fields = '__all__'
-        geo_field = "geometry"
